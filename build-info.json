@@ -1,0 +1,10 @@
+{
+  "title": "合成水果铺",
+  "playerVersion": "1.0.0",
+  "packagedOn": "2026-10-22",
+  "sourceBuild": "fruitshop_web (2026-10-22 10:18)",
+  "unity": "2022.3.62f3c1",
+  "compression": "gzip with Unity decompression fallback",
+  "threads": false,
+  "notes": "已编译网页试玩；不含 Unity 工程源码。尚未上传，尚未进行线上游戏验收。"
+}
