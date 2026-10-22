@@ -31,7 +31,40 @@ jobs:
           fetch-depth: 1
       - name: Verify website checksums
         working-directory: WebGL
-        run: sha256sum --check SHA256SUMS.txt
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import sys
+          
+          # Only these original text payloads may differ in CRLF/LF line endings.
+          # Each alternative is bound to its original manifest hash.
+          alternatives = {'index.html': ('adcbed2bae1d89ede9b3b35d42d1d105333ec2aed2a6f48143fca871d6420325', '5327911ed78a5d0e796059f80b7b595f77cb762d9e2e270e152634a549a29c8f'), 'build-info.json': ('8956713162bed617edb27f4f5d42ee3d4ce0a2525529f82e8287bf39b20b64cf', '5c7ab5a7a5d847c226f867e9816e982c28db8930e6f3944b9f703a82dc4076b0')}
+          failed = []
+          for line in Path('SHA256SUMS.txt').read_text(encoding='utf-8-sig').splitlines():
+              if not line.strip():
+                  continue
+              expected, name = line.split('  ', 1)
+              path = Path(name)
+              if path.is_absolute() or '..' in path.parts or not path.is_file():
+                  print(f'{name}: MISSING OR INVALID PATH')
+                  failed.append(name)
+                  continue
+              data = path.read_bytes()
+              actual = hashlib.sha256(data).hexdigest()
+              if actual == expected:
+                  print(f'{name}: OK')
+                  continue
+              pair = alternatives.get(name)
+              canonical = hashlib.sha256(data.replace(b'\r\n', b'\n')).hexdigest()
+              if pair and expected == pair[0] and canonical == pair[1]:
+                  print(f'{name}: OK (CRLF/LF difference only)')
+              else:
+                  print(f'{name}: FAILED expected={expected} actual={actual}')
+                  failed.append(name)
+          if failed:
+              sys.exit('Content verification failed: ' + ', '.join(failed))
+          PY
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website only
